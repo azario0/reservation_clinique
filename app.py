@@ -74,14 +74,18 @@ class DoctorOfficeApp(ctk.CTk):
         frame = ctk.CTkFrame(self.tab_manage)
         frame.pack(expand=True, fill="both", padx=20, pady=20)
 
-        ctk.CTkLabel(frame, text="Search by:").grid(row=0, column=0, padx=5, pady=5)
-        self.search_option = ctk.CTkOptionMenu(frame, values=["Name", "Date"])
+        ctk.CTkLabel(frame, text="Rechercher par:").grid(row=0, column=0, padx=5, pady=5)
+        self.search_option = ctk.CTkOptionMenu(frame, values=["Nom", "Date"], command=self.toggle_search_input)
         self.search_option.grid(row=0, column=1, padx=5, pady=5)
 
         self.search_entry = ctk.CTkEntry(frame)
         self.search_entry.grid(row=0, column=2, padx=5, pady=5)
 
-        search_button = ctk.CTkButton(frame, text="Search", command=self.search_reservations)
+        self.date_entry = DateEntry(frame, width=12, background='darkblue', foreground='white', borderwidth=2)
+        self.date_entry.grid(row=0, column=2, padx=5, pady=5)
+        self.date_entry.grid_remove()  # Cacher initialement le widget de date
+
+        search_button = ctk.CTkButton(frame, text="Rechercher", command=self.search_reservations)
         search_button.grid(row=0, column=3, padx=5, pady=5)
 
         self.results_frame = ctk.CTkScrollableFrame(frame)
@@ -89,6 +93,14 @@ class DoctorOfficeApp(ctk.CTk):
 
         frame.grid_rowconfigure(1, weight=1)
         frame.grid_columnconfigure(0, weight=1)
+
+    def toggle_search_input(self, choice):
+        if choice == "Nom":
+            self.search_entry.grid()
+            self.date_entry.grid_remove()
+        else:
+            self.search_entry.grid_remove()
+            self.date_entry.grid()
 
     def submit_reservation(self):
         name = self.name_entry.get()
@@ -132,22 +144,25 @@ class DoctorOfficeApp(ctk.CTk):
             widget.destroy()
 
         search_type = self.search_option.get()
-        search_value = self.search_entry.get()
+        if search_type == "Nom":
+            search_value = self.search_entry.get().lower()
+        else:
+            search_value = self.date_entry.get_date().strftime("%Y-%m-%d")
 
         with open(self.csv_file, 'r') as file:
             reader = csv.reader(file)
-            next(reader)  # Skip header
+            next(reader)  # Ignorer l'en-tête
             for row in reader:
-                if len(row) >= 5:  # Ensure the row has at least 5 elements
-                    if (search_type == "Name" and search_value.lower() in f"{row[0]} {row[1]}".lower()) or \
-                    (search_type == "Date" and search_value == row[3]):
+                if len(row) >= 5:  # S'assurer que la ligne a au moins 5 éléments
+                    if (search_type == "Nom" and search_value in f"{row[0]} {row[1]}".lower()) or \
+                       (search_type == "Date" and search_value == row[3]):
                         frame = ctk.CTkFrame(self.results_frame)
                         frame.pack(fill="x", padx=5, pady=5)
                         ctk.CTkLabel(frame, text=f"{row[0]} {row[1]} - {row[3]} {row[4]}").pack(side="left", padx=5)
-                        ctk.CTkButton(frame, text="Modify", command=lambda r=row: self.modify_reservation(r)).pack(side="right", padx=5)
-                        ctk.CTkButton(frame, text="Delete", command=lambda r=row: self.delete_reservation(r)).pack(side="right", padx=5)
+                        ctk.CTkButton(frame, text="Modifier", command=lambda r=row: self.modify_reservation(r)).pack(side="right", padx=5)
+                        ctk.CTkButton(frame, text="Supprimer", command=lambda r=row: self.delete_reservation(r)).pack(side="right", padx=5)
                 else:
-                    print(f"Skipping invalid row: {row}")
+                    print(f"Ligne invalide ignorée : {row}")
 
     def modify_reservation(self, reservation):
         modify_window = ctk.CTkToplevel(self)

@@ -202,6 +202,7 @@ class DoctorOfficeApp(ctk.CTk):
             self.update_reservation(reservation, new_reservation)
             modify_window.destroy()
             self.search_reservations()
+            self.update_today_reservations()  # Update today's reservations after modifying
 
         ctk.CTkButton(modify_window, text="Save Changes", command=save_changes).pack(padx=5, pady=20)
 
@@ -233,7 +234,8 @@ class DoctorOfficeApp(ctk.CTk):
             writer.writerows(rows)
 
         self.search_reservations()
-
+        self.update_today_reservations()
+        
 if __name__ == "__main__":
     app = DoctorOfficeApp()
     app.mainloop()
